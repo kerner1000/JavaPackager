@@ -274,7 +274,7 @@ public class BundleJre extends ArtifactGenerator<Packager> {
 			})
 			.forEach(path -> {
 				additionalPaths.add("--module-path");
-				additionalPaths.add(path.toString());
+				additionalPaths.add(path.getAbsolutePath());
 			});
 		
 		return additionalPaths.toArray(new String[0]);
