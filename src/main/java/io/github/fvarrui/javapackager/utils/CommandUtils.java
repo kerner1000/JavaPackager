@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import org.apache.commons.lang3.StringUtils;
 import org.codehaus.plexus.util.cli.CommandLineException;
 
 /**
@@ -16,7 +15,7 @@ public class CommandUtils {
 	public static String execute(File workingDirectory, String executable, Object... arguments) throws IOException, CommandLineException {
 		ExecutionResult result = executeWithResult(workingDirectory, executable, arguments);
 		if (result.getExitCode() != 0) {
-			throw new CommandLineException("Command execution failed: " + executable + " " + StringUtils.join(arguments, " "));
+			throw new CommandLineException("Command execution failed: " + result.getCommandLine());
 		}
 		return result.getOutput();
 	}

@@ -1,6 +1,7 @@
 package io.github.fvarrui.javapackager.utils;
 
 import java.io.File;
+import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
@@ -25,6 +26,7 @@ public class Commandline extends org.codehaus.plexus.util.cli.Commandline {
     
 	public void createArguments(Object... arguments) {
 		for (Object argument : arguments) {
+
 			
 			if (argument == null)
 				continue;
@@ -32,6 +34,12 @@ public class Commandline extends org.codehaus.plexus.util.cli.Commandline {
 			if (argument.getClass().isArray()) {
 				createArguments((Object[])argument);
 				continue;
+			}
+			
+			if (argument instanceof List) {
+				List<?> collection = (List<?>) argument;
+				createArguments(collection.toArray(new Object[collection.size()]));
+				continue;				
 			}
 			
 			if (argument instanceof File) {
