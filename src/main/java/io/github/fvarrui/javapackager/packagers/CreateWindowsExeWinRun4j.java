@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -33,12 +32,10 @@ public class CreateWindowsExeWinRun4j extends AbstractCreateWindowsExe {
 
 	@Override
 	public boolean skip(WindowsPackager packager) {
-
 		if (!packager.getPlatform().isCurrentPlatform()) {
 			Logger.error(getArtifactName() + " cannot be generated with WinRun4J due to the target platform (" + packager.getPlatform() + ") is different from the execution platform (" + Platform.getCurrentPlatform() + ")!");
 			return true;
 		}
-		
 		return false;
 	}
 
