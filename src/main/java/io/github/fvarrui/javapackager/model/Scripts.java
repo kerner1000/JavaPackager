@@ -9,6 +9,12 @@ public class Scripts implements Serializable {
 	private File bootstrap;
 	private File preInstall;
 	private File postInstall;
+	
+	public Scripts() {}
+	
+	public Scripts(File bootstrap) {
+		setBootstrap(bootstrap);
+	}
 
 	public File getBootstrap() {
 		return bootstrap;
