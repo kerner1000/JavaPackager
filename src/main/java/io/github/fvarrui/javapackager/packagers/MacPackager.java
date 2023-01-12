@@ -5,7 +5,7 @@ import io.github.fvarrui.javapackager.model.Platform;
 import io.github.fvarrui.javapackager.utils.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
-import org.codehaus.plexus.util.cli.CommandLineException;
+import org.apache.maven.shared.utils.cli.CommandLineException;
 
 import java.io.File;
 import java.io.IOException;
@@ -214,7 +214,7 @@ public class MacPackager extends Packager {
 		}
 	}
 
-	private void manualDeepSign(File appFolder, String developerCertificateName, File entitlements) throws IOException, CommandLineException {
+	private void manualDeepSign(File appFolder, String developerCertificateName, File entitlements) throws IOException, CommandLineException, org.codehaus.plexus.util.cli.CommandLineException {
 
 		List<Object> findCommandArgs = new ArrayList<>();
 		findCommandArgs.add(appFolder);
@@ -260,7 +260,7 @@ public class MacPackager extends Packager {
 
 		CommandUtils.execute("codesign", codeSignArgs2.toArray(new Object[0]));
 
-	}
+		}
 
 	private void addHardenedCodesign(Collection<Object> args){
 		if (macConfig.isHardenedCodesign()) {
