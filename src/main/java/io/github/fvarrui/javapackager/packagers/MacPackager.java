@@ -221,8 +221,8 @@ public class MacPackager extends Packager {
 		List<Object> findCommandArgs = new ArrayList<>();
 		findCommandArgs.add(appFolder);
 		findCommandArgs.add("-depth"); // execute 'codesign' in 'reverse order', i.e., deepest files first
-//		findCommandArgs.add("-type");
-//		findCommandArgs.add("f"); // filter for files only
+		findCommandArgs.add("-type");
+		findCommandArgs.add("f"); // filter for files only
 		findCommandArgs.add("-exec");
 		findCommandArgs.add("codesign");
 		findCommandArgs.add("-f");
