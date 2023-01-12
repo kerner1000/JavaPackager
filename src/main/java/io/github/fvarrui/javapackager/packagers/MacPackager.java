@@ -165,7 +165,7 @@ public class MacPackager extends Packager {
 		} else if (!getMacConfig().isCodesignApp()) {
 			Logger.warn("App codesigning disabled");
 		} else {
-			codesign(this.macConfig.getDeveloperId(), this.macConfig.getEntitlements(), this.appFile);
+			codesign(this.macConfig.getDeveloperId(), this.appFile);
 		}
 	}
 
@@ -195,15 +195,16 @@ public class MacPackager extends Packager {
 		return appStubFile;
 	}
 
-	private void codesign(String developerId, File entitlements, File appFile) throws Exception {
+	private void codesign(String developerId, File appFile) throws Exception {
 
-		prepareEntitlementFile(entitlements);
+		prepareEntitlementFile();
 
-		manualDeepSign(appFile, developerId, entitlements);
+		manualDeepSign(appFile, developerId, this.macConfig.getEntitlements());
 
 	}
 
-	private void prepareEntitlementFile(File entitlements) throws Exception {
+	private void prepareEntitlementFile() throws Exception {
+		File entitlements = this.macConfig.getEntitlements();
 		// if entitlements.plist file not specified, use a default one
 		if (entitlements == null) {
 			Logger.warn("Entitlements file not specified. Using defaults!");
@@ -212,6 +213,7 @@ public class MacPackager extends Packager {
 		} else if (!entitlements.exists()) {
 			throw new Exception("Entitlements file doesn't exist: " + entitlements);
 		}
+		this.macConfig.setEntitlements(entitlements);
 	}
 
 	private void manualDeepSign(File appFolder, String developerCertificateName, File entitlements) throws Exception {
