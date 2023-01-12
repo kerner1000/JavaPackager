@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Packager for MacOS
+ * Packager for Mac OS X
  */
 public class MacPackager extends Packager {
 
@@ -35,10 +35,12 @@ public class MacPackager extends Packager {
 
 		this.macConfig.setDefaults(this);
 
-		// FIX useResourcesAsWorkingDir=false doesn't work fine on Mac OS (option disabled)
+		// FIX useResourcesAsWorkingDir=false doesn't work fine on Mac OS (option
+		// disabled)
 		if (!this.isUseResourcesAsWorkingDir()) {
 			this.useResourcesAsWorkingDir = true;
-			Logger.warn("'useResourcesAsWorkingDir' property disabled on Mac OS (useResourcesAsWorkingDir is always true)");
+			Logger.warn(
+					"'useResourcesAsWorkingDir' property disabled on Mac OS (useResourcesAsWorkingDir is always true)");
 		}
 
 	}
@@ -117,7 +119,7 @@ public class MacPackager extends Packager {
 		} else {
 
 			File launcher = macConfig.getCustomLauncher();
-			if (launcher != null && launcher.canRead() && launcher.isFile()){
+			if(launcher != null && launcher.canRead() && launcher.isFile()){
 				FileUtils.copyFileToFolder(launcher, macOSFolder);
 				this.executable = new File(macOSFolder, launcher.getName());
 			} else {
@@ -214,7 +216,6 @@ public class MacPackager extends Packager {
 
 	private void manualDeepSign(File appFolder, String developerCertificateName, File entitlements) throws IOException, CommandLineException {
 
-		// codesign each file in app
 		List<Object> findCommandArgs = new ArrayList<>();
 		findCommandArgs.add(appFolder);
 		findCommandArgs.add("-depth"); // execute 'codesign' in 'reverse order', i.e., deepest files first
@@ -223,33 +224,42 @@ public class MacPackager extends Packager {
 		findCommandArgs.add("-exec");
 		findCommandArgs.add("codesign");
 		findCommandArgs.add("-f");
+
 		addHardenedCodesign(findCommandArgs);
+
 		findCommandArgs.add("-s");
 		findCommandArgs.add(developerCertificateName);
 		findCommandArgs.add("--entitlements");
 		findCommandArgs.add(entitlements);
 		findCommandArgs.add("{}");
 		findCommandArgs.add("\\;");
-		CommandUtils.execute("find", findCommandArgs);
+
+		CommandUtils.execute("find", findCommandArgs.toArray(new Object[0]));
 
 		// make sure the executable is signed last
-		codesign(entitlements, developerCertificateName, this.executable);
+		List<Object> codeSignCommandArgs = new ArrayList<>();
+		codeSignCommandArgs.add("-f");
+		addHardenedCodesign(codeSignCommandArgs);
+		codeSignCommandArgs.add("--entitlements");
+		codeSignCommandArgs.add(entitlements);
+		codeSignCommandArgs.add("-s");
+		codeSignCommandArgs.add(developerCertificateName);
+		codeSignCommandArgs.add(this.executable);
+
+		CommandUtils.execute("codesign", codeSignCommandArgs.toArray(new Object[0]));
 
 		// finally, sign the top level directory
-		codesign(entitlements, developerCertificateName, appFolder);
+		List<Object> codeSignArgs2 = new ArrayList<>();
+		codeSignArgs2.add("-f");
+		addHardenedCodesign(codeSignArgs2);
+		codeSignArgs2.add("--entitlements");
+		codeSignArgs2.add(entitlements);
+		codeSignArgs2.add("-s");
+		codeSignArgs2.add(developerCertificateName);
+		codeSignArgs2.add(appFolder);
 
-	}
-	
-	private void codesign(File entitlements, String developerCertificateName, File file) throws IOException, CommandLineException {
-		List<Object> arguments = new ArrayList<>();
-		arguments.add("-f");
-		addHardenedCodesign(arguments);
-		arguments.add("--entitlements");
-		arguments.add(entitlements);
-		arguments.add("-s");
-		arguments.add(developerCertificateName);
-		arguments.add(appFolder);
-		CommandUtils.execute("codesign", arguments);
+		CommandUtils.execute("codesign", codeSignArgs2.toArray(new Object[0]));
+
 	}
 
 	private void addHardenedCodesign(Collection<Object> args){
