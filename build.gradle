@@ -98,7 +98,7 @@ publishing {
 
 java {
 	withSourcesJar()
-	// and/or analogously use "withJavadocJar()" to get a "javadocJar" task
+	// and/or analogously use “withJavadocJar()” to get a “javadocJar” task
 }
 
 tasks.withType(Javadoc) {
@@ -249,8 +249,8 @@ nexusStaging {
 
 task updateUniversalJavaApplicationStub(type : Download) {
 	def version = '20220410.162252'
-	group 'Update assets'
-	description 'Downloads compiled and scripted versions of universalJavaApplicationStub to src/main/resources/mac overriding the existing ones.'	
+	group 'Update universalJavaApplicationStub'
+	description 'Downloads and ovewrites compiled and scripted versions of universalJavaApplicationStub to src/main/resources/mac and overrides the existing ones.'	
 	src([
 		"https://github.com/fvarrui/universalJavaApplicationStub/releases/download/${version}/universalJavaApplicationStub.sh",
 		"https://github.com/fvarrui/universalJavaApplicationStub/releases/download/${version}/universalJavaApplicationStub.x86_64",
@@ -260,15 +260,3 @@ task updateUniversalJavaApplicationStub(type : Download) {
 	dest file('src/main/resources/mac')
     overwrite true
 }
-
-task updateWhyJavaLauncher(type : Download) {
-	def version = '1.1.2'
-	group 'Update assets'
-	description 'Downloads JavaLauncher.exe to src/main/resources/windows and overwrites the existing one.'	
-	src([
-		"https://github.com/AstroImageJ/Why/releases/download/${version}/JavaLauncher.exe"
-	])
-	dest file('src/main/resources/windows')
-    overwrite true
-}
-
