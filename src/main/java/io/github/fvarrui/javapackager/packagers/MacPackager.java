@@ -214,7 +214,7 @@ public class MacPackager extends Packager {
 		}
 	}
 
-	private void manualDeepSign(File appFolder, String developerCertificateName, File entitlements) throws IOException, CommandLineException, org.codehaus.plexus.util.cli.CommandLineException {
+	private void manualDeepSign(File appFolder, String developerCertificateName, File entitlements) throws Exception {
 
 		List<Object> findCommandArgs = new ArrayList<>();
 		findCommandArgs.add(appFolder);
