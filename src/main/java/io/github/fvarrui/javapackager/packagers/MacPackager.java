@@ -2,19 +2,15 @@ package io.github.fvarrui.javapackager.packagers;
 
 import io.github.fvarrui.javapackager.model.MacStartup;
 import io.github.fvarrui.javapackager.model.Platform;
-import io.github.fvarrui.javapackager.utils.*;
-import io.github.javacodesign.Notarizer;
+import io.github.fvarrui.javapackager.utils.FileUtils;
+import io.github.fvarrui.javapackager.utils.Logger;
+import io.github.fvarrui.javapackager.utils.VelocityUtils;
+import io.github.fvarrui.javapackager.utils.XMLUtils;
 import io.github.javacodesign.Signer;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.SystemUtils;
-import org.codehaus.plexus.util.cli.CommandLineException;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -214,57 +210,6 @@ public class MacPackager extends Packager {
 			throw new Exception("Entitlements file doesn't exist: " + entitlements);
 		}
 		return entitlements;
-	}
-
-	private void manualDeepSign(File appFolder, String developerCertificateName, File entitlements) throws IOException, CommandLineException {
-
-		// codesign each file in app
-		List<Object> findCommandArgs = new ArrayList<>();
-		findCommandArgs.add(appFolder);
-		findCommandArgs.add("-depth"); // execute 'codesign' in 'reverse order', i.e., deepest files first
-		findCommandArgs.add("-type");
-		findCommandArgs.add("f"); // filter for files only
-		findCommandArgs.add("-exec");
-		findCommandArgs.add("codesign");
-		findCommandArgs.add("-f");
-		addHardenedCodesign(findCommandArgs);
-		findCommandArgs.add("-s");
-		findCommandArgs.add(developerCertificateName);
-		findCommandArgs.add("--entitlements");
-		findCommandArgs.add(entitlements);
-		findCommandArgs.add("{}");
-		findCommandArgs.add("\\;");
-		CommandUtils.execute("find", findCommandArgs);
-
-		// make sure the executable is signed last
-		codesign(entitlements, developerCertificateName, this.executable);
-
-		// finally, sign the top level directory
-		codesign(entitlements, developerCertificateName, appFolder);
-
-	}
-	
-	private void codesign(File entitlements, String developerCertificateName, File file) throws IOException, CommandLineException {
-		List<Object> arguments = new ArrayList<>();
-		arguments.add("-f");
-		addHardenedCodesign(arguments);
-		arguments.add("--entitlements");
-		arguments.add(entitlements);
-		arguments.add("-s");
-		arguments.add(developerCertificateName);
-		arguments.add(appFolder);
-		CommandUtils.execute("codesign", arguments);
-	}
-
-	private void addHardenedCodesign(Collection<Object> args){
-		if (macConfig.isHardenedCodesign()) {
-			if (VersionUtils.compareVersions("10.13.6", SystemUtils.OS_VERSION) >= 0) {
-				args.add("-o");
-				args.add("runtime"); // enable hardened runtime if Mac OS version >= 10.13.6
-			} else {
-				Logger.warn("Mac OS version detected: " + SystemUtils.OS_VERSION + " ... hardened runtime disabled!");
-			}
-		}
 	}
 
 }
