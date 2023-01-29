@@ -15,6 +15,9 @@ repositories {
 	maven { 
 		url 'https://plugins.gradle.org/m2/'
 	}
+	 maven {
+	     url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots")
+	 }
 }
 
 gradlePlugin {
@@ -55,6 +58,7 @@ dependencies {
 	implementation 'net.jsign:jsign-core:3.1'
 	implementation 'org.redline-rpm:redline:1.2.10'
 	implementation 'io.github.fvarrui:launch4j:2.5.2'
+	implementation 'io.github.drrename.codesignjava:codesignjava:1.0.0'
 
 	testImplementation 'junit:junit:4.13.1'
 
