@@ -226,10 +226,11 @@ public class MacPackager extends Packager {
 			String apiKey = macConfig.getApiKey();
 			String apiIssuer = macConfig.getApiIssuer();
 			Notarizer notarizer = new Notarizer(primaryBundleId, apiKey, apiIssuer, this.appFile.toPath());
-			boolean notarizationResult = notarizer.notarize(3,10000);
-			if(!notarizationResult)
-				Logger.warn("Notarization result not as expected after 3 retries.");
-
+			boolean notarizationResult = notarizer.notarize();
+			if(notarizationResult)
+				Logger.info("Notarization success!");
+			else
+				Logger.warn("Notarization result not as expected. That does not mean it failed necessarily, maybe we just didn't wait long enough.");
 		}
 	}
 }
