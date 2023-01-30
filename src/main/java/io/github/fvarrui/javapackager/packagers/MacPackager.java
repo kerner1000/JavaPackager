@@ -2,21 +2,19 @@ package io.github.fvarrui.javapackager.packagers;
 
 import io.github.fvarrui.javapackager.model.MacStartup;
 import io.github.fvarrui.javapackager.model.Platform;
-import io.github.fvarrui.javapackager.utils.*;
+import io.github.fvarrui.javapackager.utils.FileUtils;
+import io.github.fvarrui.javapackager.utils.Logger;
+import io.github.fvarrui.javapackager.utils.VelocityUtils;
+import io.github.fvarrui.javapackager.utils.XMLUtils;
+import io.github.javacodesign.Signer;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.SystemUtils;
-import org.apache.maven.shared.utils.cli.CommandLineException;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Packager for Mac OS X
+ * Packager for MacOS
  */
 public class MacPackager extends Packager {
 
@@ -35,12 +33,10 @@ public class MacPackager extends Packager {
 
 		this.macConfig.setDefaults(this);
 
-		// FIX useResourcesAsWorkingDir=false doesn't work fine on Mac OS (option
-		// disabled)
+		// FIX useResourcesAsWorkingDir=false doesn't work fine on Mac OS (option disabled)
 		if (!this.isUseResourcesAsWorkingDir()) {
 			this.useResourcesAsWorkingDir = true;
-			Logger.warn(
-					"'useResourcesAsWorkingDir' property disabled on Mac OS (useResourcesAsWorkingDir is always true)");
+			Logger.warn("'useResourcesAsWorkingDir' property disabled on Mac OS (useResourcesAsWorkingDir is always true)");
 		}
 
 	}
@@ -119,7 +115,7 @@ public class MacPackager extends Packager {
 		} else {
 
 			File launcher = macConfig.getCustomLauncher();
-			if(launcher != null && launcher.canRead() && launcher.isFile()){
+			if (launcher != null && launcher.canRead() && launcher.isFile()){
 				FileUtils.copyFileToFolder(launcher, macOSFolder);
 				this.executable = new File(macOSFolder, launcher.getName());
 			} else {
@@ -165,7 +161,7 @@ public class MacPackager extends Packager {
 		} else if (!getMacConfig().isCodesignApp()) {
 			Logger.warn("App codesigning disabled");
 		} else {
-			codesign(this.macConfig.getDeveloperId(), this.appFile);
+			codesign(this.macConfig.getDeveloperId(), this.macConfig.getEntitlements(), this.appFile);
 		}
 	}
 
@@ -195,16 +191,16 @@ public class MacPackager extends Packager {
 		return appStubFile;
 	}
 
-	private void codesign(String developerId, File appFile) throws Exception {
+	private void codesign(String developerId, File entitlements, File appFile, File executable) throws Exception {
 
-		prepareEntitlementFile();
+		entitlements = prepareEntitlementFile(entitlements);
 
-		manualDeepSign(appFile, developerId, this.macConfig.getEntitlements());
+		Signer signer = new Signer(developerId, appFile.toPath(), executable.toPath(), entitlements.toPath(), entitlements.toPath());
+		signer.sign();
 
 	}
 
-	private void prepareEntitlementFile() throws Exception {
-		File entitlements = this.macConfig.getEntitlements();
+	private File prepareEntitlementFile(File entitlements) throws Exception {
 		// if entitlements.plist file not specified, use a default one
 		if (entitlements == null) {
 			Logger.warn("Entitlements file not specified. Using defaults!");
@@ -213,66 +209,7 @@ public class MacPackager extends Packager {
 		} else if (!entitlements.exists()) {
 			throw new Exception("Entitlements file doesn't exist: " + entitlements);
 		}
-		this.macConfig.setEntitlements(entitlements);
-	}
-
-	private void manualDeepSign(File appFolder, String developerCertificateName, File entitlements) throws Exception {
-
-		List<Object> findCommandArgs = new ArrayList<>();
-		findCommandArgs.add(appFolder);
-		findCommandArgs.add("-depth"); // execute 'codesign' in 'reverse order', i.e., deepest files first
-		findCommandArgs.add("-type");
-		findCommandArgs.add("f"); // filter for files only
-		findCommandArgs.add("-exec");
-		findCommandArgs.add("codesign");
-		findCommandArgs.add("-f");
-
-		addHardenedCodesign(findCommandArgs);
-
-		findCommandArgs.add("-s");
-		findCommandArgs.add(developerCertificateName);
-		findCommandArgs.add("--entitlements");
-		findCommandArgs.add(entitlements);
-		findCommandArgs.add("{}");
-		findCommandArgs.add("\\;");
-
-		CommandUtils.execute("find", findCommandArgs.toArray(new Object[0]));
-
-		// make sure the executable is signed last
-		List<Object> codeSignCommandArgs = new ArrayList<>();
-		codeSignCommandArgs.add("-f");
-		addHardenedCodesign(codeSignCommandArgs);
-		codeSignCommandArgs.add("--entitlements");
-		codeSignCommandArgs.add(entitlements);
-		codeSignCommandArgs.add("-s");
-		codeSignCommandArgs.add(developerCertificateName);
-		codeSignCommandArgs.add(this.executable);
-
-		CommandUtils.execute("codesign", codeSignCommandArgs.toArray(new Object[0]));
-
-		// finally, sign the top level directory
-		List<Object> codeSignArgs2 = new ArrayList<>();
-		codeSignArgs2.add("-f");
-		addHardenedCodesign(codeSignArgs2);
-		codeSignArgs2.add("--entitlements");
-		codeSignArgs2.add(entitlements);
-		codeSignArgs2.add("-s");
-		codeSignArgs2.add(developerCertificateName);
-		codeSignArgs2.add(appFolder);
-
-		CommandUtils.execute("codesign", codeSignArgs2.toArray(new Object[0]));
-
-		}
-
-	private void addHardenedCodesign(Collection<Object> args){
-		if (macConfig.isHardenedCodesign()) {
-			if (VersionUtils.compareVersions("10.13.6", SystemUtils.OS_VERSION) >= 0) {
-				args.add("-o");
-				args.add("runtime"); // enable hardened runtime if Mac OS version >= 10.13.6
-			} else {
-				Logger.warn("Mac OS version detected: " + SystemUtils.OS_VERSION + " ... hardened runtime disabled!");
-			}
-		}
+		return entitlements;
 	}
 
 }
