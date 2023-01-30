@@ -165,7 +165,7 @@ public class MacPackager extends Packager {
 		} else if (!getMacConfig().isCodesignApp()) {
 			Logger.warn("App codesigning disabled");
 		} else {
-			codesign(this.macConfig.getDeveloperId(), this.macConfig.getEntitlements(), this.appFile);
+			codesign(this.macConfig.getDeveloperId(), this.macConfig.getEntitlements(), this.appFile, executable);
 		}
 	}
 
