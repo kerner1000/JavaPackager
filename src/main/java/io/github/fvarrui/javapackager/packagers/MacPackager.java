@@ -6,10 +6,12 @@ import io.github.fvarrui.javapackager.utils.FileUtils;
 import io.github.fvarrui.javapackager.utils.Logger;
 import io.github.fvarrui.javapackager.utils.VelocityUtils;
 import io.github.fvarrui.javapackager.utils.XMLUtils;
+import io.github.javacodesign.Notarizer;
 import io.github.javacodesign.Signer;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -94,6 +96,8 @@ public class MacPackager extends Packager {
 		processProvisionProfileFile();
 
 		codesign();
+
+		notarize();
 
 		return appFile;
 	}
@@ -212,4 +216,20 @@ public class MacPackager extends Packager {
 		return entitlements;
 	}
 
+	private void notarize() throws IOException {
+		if (!Platform.mac.isCurrentPlatform()) {
+			Logger.warn("Generated app could not be notarized due to current platform is " + Platform.getCurrentPlatform());
+		} else if (!getMacConfig().isCodesignApp()) {
+			Logger.info("App notarization disabled");
+		} else {
+			String primaryBundleId = macConfig.getAppId();
+			String apiKey = macConfig.getApiKey();
+			String apiIssuer = macConfig.getApiIssuer();
+			Notarizer notarizer = new Notarizer(primaryBundleId, apiKey, apiIssuer, this.appFile.toPath());
+			boolean notarizationResult = notarizer.notarize(3,10000);
+			if(!notarizationResult)
+				Logger.warn("Notarization result not as expected after 3 retries.");
+
+		}
+	}
 }

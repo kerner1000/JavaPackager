@@ -37,6 +37,9 @@ public class MacConfig implements Serializable {
 	private File customLauncher;
 	private File customInfoPlist;
 	private boolean codesignApp = true;
+	private boolean notarizeApp = false;
+	private String apiKey;
+	private String apiIssuer;
 	private InfoPlist infoPlist = new InfoPlist();
 	private boolean hardenedCodesign = true;
 	private MacStartup macStartup = MacStartup.SCRIPT;
@@ -231,6 +234,30 @@ public class MacConfig implements Serializable {
 
 	public void setCodesignApp(boolean codesignApp) {
 		this.codesignApp = codesignApp;
+	}
+
+	public boolean isNotarizeApp() {
+		return notarizeApp;
+	}
+
+	public void setNotarizeApp(boolean notarizeApp) {
+		this.notarizeApp = notarizeApp;
+	}
+
+	public String getApiKey() {
+		return apiKey;
+	}
+
+	public void setApiKey(String apiKey) {
+		this.apiKey = apiKey;
+	}
+
+	public String getApiIssuer() {
+		return apiIssuer;
+	}
+
+	public void setApiIssuer(String apiIssuer) {
+		this.apiIssuer = apiIssuer;
 	}
 
 	public InfoPlist getInfoPlist() {
