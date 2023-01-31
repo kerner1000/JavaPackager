@@ -99,6 +99,8 @@ public class MacPackager extends Packager {
 
 		codesign();
 
+		notarize();
+
 		return appFile;
 	}
 
@@ -216,54 +218,21 @@ public class MacPackager extends Packager {
 		return entitlements;
 	}
 
-	private void manualDeepSign(File appFolder, String developerCertificateName, File entitlements) throws IOException, CommandLineException {
-
-		// codesign each file in app
-		List<Object> findCommandArgs = new ArrayList<>();
-		findCommandArgs.add(appFolder);
-		findCommandArgs.add("-depth"); // execute 'codesign' in 'reverse order', i.e., deepest files first
-		findCommandArgs.add("-type");
-		findCommandArgs.add("f"); // filter for files only
-		findCommandArgs.add("-exec");
-		findCommandArgs.add("codesign");
-		findCommandArgs.add("-f");
-		addHardenedCodesign(findCommandArgs);
-		findCommandArgs.add("-s");
-		findCommandArgs.add(developerCertificateName);
-		findCommandArgs.add("--entitlements");
-		findCommandArgs.add(entitlements);
-		findCommandArgs.add("{}");
-		findCommandArgs.add("\\;");
-		CommandUtils.execute("find", findCommandArgs);
-
-		// make sure the executable is signed last
-		codesign(entitlements, developerCertificateName, this.executable);
-
-		// finally, sign the top level directory
-		codesign(entitlements, developerCertificateName, appFolder);
-
-	}
-	
-	private void codesign(File entitlements, String developerCertificateName, File file) throws IOException, CommandLineException {
-		List<Object> arguments = new ArrayList<>();
-		arguments.add("-f");
-		addHardenedCodesign(arguments);
-		arguments.add("--entitlements");
-		arguments.add(entitlements);
-		arguments.add("-s");
-		arguments.add(developerCertificateName);
-		arguments.add(appFolder);
-		CommandUtils.execute("codesign", arguments);
-	}
-
-	private void addHardenedCodesign(Collection<Object> args){
-		if (macConfig.isHardenedCodesign()) {
-			if (VersionUtils.compareVersions("10.13.6", SystemUtils.OS_VERSION) >= 0) {
-				args.add("-o");
-				args.add("runtime"); // enable hardened runtime if Mac OS version >= 10.13.6
-			} else {
-				Logger.warn("Mac OS version detected: " + SystemUtils.OS_VERSION + " ... hardened runtime disabled!");
-			}
+	private void notarize() throws IOException {
+		if (!Platform.mac.isCurrentPlatform()) {
+			Logger.warn("Generated app could not be notarized due to current platform is " + Platform.getCurrentPlatform());
+		} else if (!getMacConfig().isCodesignApp()) {
+			Logger.info("App notarization disabled");
+		} else {
+			String primaryBundleId = macConfig.getAppId();
+			String apiKey = macConfig.getApiKey();
+			String apiIssuer = macConfig.getApiIssuer();
+			Notarizer notarizer = new Notarizer(primaryBundleId, apiKey, apiIssuer, this.appFile.toPath());
+			boolean notarizationResult = notarizer.notarize();
+			if(notarizationResult)
+				Logger.info("Notarization success!");
+			else
+				Logger.warn("Notarization result not as expected. That does not mean it failed necessarily, maybe we just didn't wait long enough.");
 		}
 	}
 
