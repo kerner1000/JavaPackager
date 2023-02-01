@@ -4,7 +4,6 @@ plugins {
 	id 'maven-publish'
 	id 'java-gradle-plugin'
 	id 'com.gradle.plugin-publish' version '0.12.0'
-	id 'io.codearte.nexus-staging' version '0.21.2'
 	id 'eclipse'
 	id 'de.undercouch.download' version '5.0.4'
 }
