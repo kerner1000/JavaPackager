@@ -199,25 +199,17 @@ public class MacPackager extends Packager {
 
 	private void codesign(String developerId, File entitlements, File appFile, File executable) throws Exception {
 
-		entitlements = prepareEntitlementFile(entitlements);
-
-		Signer signer = new Signer(developerId, appFile.toPath(), executable.toPath(), entitlements.toPath(), entitlements.toPath());
-		signer.sign();
-
-	}
-
-	private File prepareEntitlementFile(File entitlements) throws Exception {
-		// if entitlements.plist file not specified, use a default one
-		if (entitlements == null) {
-			Logger.warn("Entitlements file not specified. Using defaults!");
-			entitlements = new File(assetsFolder, "entitlements.plist");
-			VelocityUtils.render("mac/entitlements.plist.vtl", entitlements, this);
-		} else if (!entitlements.exists()) {
-			throw new Exception("Entitlements file doesn't exist: " + entitlements);
+		Signer signer;
+		if(entitlements != null) {
+			Logger.info("Using provided entitlements for both JVM and launcher " + entitlements);
+			signer = new Signer(developerId, appFile.toPath(), executable.toPath(), entitlements.toPath(), entitlements.toPath());
 		}
-		return entitlements;
+		else {
+			Logger.info("Using default entitlements for JVM and launcher");
+			signer = new Signer(developerId, appFile.toPath(), executable.toPath());
+		}
+		signer.sign();
 	}
-
 	private void notarize() throws IOException {
 		if (!Platform.mac.isCurrentPlatform()) {
 			Logger.warn("Generated app could not be notarized due to current platform is " + Platform.getCurrentPlatform());
