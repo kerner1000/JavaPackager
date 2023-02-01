@@ -20,15 +20,15 @@ repositories {
 gradlePlugin {
 	plugins {
 		javaPackagerPlugin {
-			id = 'io.github.fvarrui.javapackager.plugin'
-			implementationClass = 'io.github.fvarrui.javapackager.gradle.PackagePlugin'
+			id = 'io.github.kerner1000.javapackager.plugin'
+			implementationClass = 'io.github.kerner1000.javapackager.gradle.PackagePlugin'
 		}
 	}
 }
 
 pluginBundle {
-	website = 'http://github.com/fvarrui/JavaPackager'
-	vcsUrl = 'http://github.com/fvarrui/JavaPackager.git'
+	website = 'http://github.com/kerner1000/JavaPackager'
+	vcsUrl = 'http://github.com/kerner1000/JavaPackager.git'
 	description = 'Packages Java applications as native Windows, MacOS or GNU/Linux executables and creates installers for them'
 	tags = ['java', 'packager', 'gradle-plugin', 'maven-plugin', 'native', 'installer', 'debian-packages', 'rpm-packages', 'dmg', 'maven', 'gradle', 'distribution', 'javapackager', 'linux-executables', 'deb', 'rpm', 'native-windows', 'java-applications', 'pkg', 'msi']
 	plugins {
@@ -70,7 +70,7 @@ dependencies {
 	mavenEmbedder 'org.apache.maven.wagon:wagon-provider-api:3.4.1'
 }
 
-group = 'io.github.fvarrui'
+group = 'io.github.kerner1000'
 version = '1.7.0-SNAPSHOT'
 description = 'Hybrid Maven/Gradle plugin to package Java applications as native Windows, Mac OS X or GNU/Linux executables and create installers for them'
 
