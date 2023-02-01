@@ -241,11 +241,6 @@ if (project.hasProperty('release')) {
 	
 }
 
-nexusStaging {
-	username = project.findProperty('ossrhUser') ?: ''
-	password = project.findProperty('ossrhPassword') ?: ''
-}
-
 
 task updateUniversalJavaApplicationStub(type : Download) {
 	def version = '20220410.162252'
