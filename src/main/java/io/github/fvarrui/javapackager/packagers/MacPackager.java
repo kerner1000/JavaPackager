@@ -3,9 +3,11 @@ package io.github.fvarrui.javapackager.packagers;
 import io.github.fvarrui.javapackager.model.MacStartup;
 import io.github.fvarrui.javapackager.model.Platform;
 import io.github.fvarrui.javapackager.utils.*;
+import io.github.javacodesign.Notarizer;
+import io.github.javacodesign.Signer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
-import org.apache.maven.shared.utils.cli.CommandLineException;
+import org.codehaus.plexus.util.cli.CommandLineException;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,7 +18,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Packager for Mac OS X
+ * Packager for MacOS
  */
 public class MacPackager extends Packager {
 
@@ -35,12 +37,10 @@ public class MacPackager extends Packager {
 
 		this.macConfig.setDefaults(this);
 
-		// FIX useResourcesAsWorkingDir=false doesn't work fine on Mac OS (option
-		// disabled)
+		// FIX useResourcesAsWorkingDir=false doesn't work fine on Mac OS (option disabled)
 		if (!this.isUseResourcesAsWorkingDir()) {
 			this.useResourcesAsWorkingDir = true;
-			Logger.warn(
-					"'useResourcesAsWorkingDir' property disabled on Mac OS (useResourcesAsWorkingDir is always true)");
+			Logger.warn("'useResourcesAsWorkingDir' property disabled on Mac OS (useResourcesAsWorkingDir is always true)");
 		}
 
 	}
@@ -99,6 +99,8 @@ public class MacPackager extends Packager {
 
 		codesign();
 
+		notarize();
+
 		return appFile;
 	}
 
@@ -119,7 +121,7 @@ public class MacPackager extends Packager {
 		} else {
 
 			File launcher = macConfig.getCustomLauncher();
-			if(launcher != null && launcher.canRead() && launcher.isFile()){
+			if (launcher != null && launcher.canRead() && launcher.isFile()){
 				FileUtils.copyFileToFolder(launcher, macOSFolder);
 				this.executable = new File(macOSFolder, launcher.getName());
 			} else {
@@ -165,7 +167,7 @@ public class MacPackager extends Packager {
 		} else if (!getMacConfig().isCodesignApp()) {
 			Logger.warn("App codesigning disabled");
 		} else {
-			codesign(this.macConfig.getDeveloperId(), this.appFile);
+			codesign(this.macConfig.getDeveloperId(), this.macConfig.getEntitlements(), this.appFile, executable);
 		}
 	}
 
@@ -195,83 +197,34 @@ public class MacPackager extends Packager {
 		return appStubFile;
 	}
 
-	private void codesign(String developerId, File appFile) throws Exception {
+	private void codesign(String developerId, File entitlements, File appFile, File executable) throws Exception {
 
-		prepareEntitlementFile();
-
-		manualDeepSign(appFile, developerId, this.macConfig.getEntitlements());
-
-	}
-
-	private void prepareEntitlementFile() throws Exception {
-		File entitlements = this.macConfig.getEntitlements();
-		// if entitlements.plist file not specified, use a default one
-		if (entitlements == null) {
-			Logger.warn("Entitlements file not specified. Using defaults!");
-			entitlements = new File(assetsFolder, "entitlements.plist");
-			VelocityUtils.render("mac/entitlements.plist.vtl", entitlements, this);
-		} else if (!entitlements.exists()) {
-			throw new Exception("Entitlements file doesn't exist: " + entitlements);
+		Signer signer;
+		if(entitlements != null) {
+			Logger.info("Using provided entitlements for both JVM and launcher " + entitlements);
+			signer = new Signer(developerId, appFile.toPath(), executable.toPath(), entitlements.toPath(), entitlements.toPath());
 		}
-		this.macConfig.setEntitlements(entitlements);
-	}
-
-	private void manualDeepSign(File appFolder, String developerCertificateName, File entitlements) throws Exception {
-
-		List<Object> findCommandArgs = new ArrayList<>();
-		findCommandArgs.add(appFolder);
-		findCommandArgs.add("-depth"); // execute 'codesign' in 'reverse order', i.e., deepest files first
-		findCommandArgs.add("-type");
-		findCommandArgs.add("f"); // filter for files only
-		findCommandArgs.add("-exec");
-		findCommandArgs.add("codesign");
-		findCommandArgs.add("-f");
-
-		addHardenedCodesign(findCommandArgs);
-
-		findCommandArgs.add("-s");
-		findCommandArgs.add(developerCertificateName);
-		findCommandArgs.add("--entitlements");
-		findCommandArgs.add(entitlements);
-		findCommandArgs.add("{}");
-		findCommandArgs.add("\\;");
-
-		CommandUtils.execute("find", findCommandArgs.toArray(new Object[0]));
-
-		// make sure the executable is signed last
-		List<Object> codeSignCommandArgs = new ArrayList<>();
-		codeSignCommandArgs.add("-f");
-		addHardenedCodesign(codeSignCommandArgs);
-		codeSignCommandArgs.add("--entitlements");
-		codeSignCommandArgs.add(entitlements);
-		codeSignCommandArgs.add("-s");
-		codeSignCommandArgs.add(developerCertificateName);
-		codeSignCommandArgs.add(this.executable);
-
-		CommandUtils.execute("codesign", codeSignCommandArgs.toArray(new Object[0]));
-
-		// finally, sign the top level directory
-		List<Object> codeSignArgs2 = new ArrayList<>();
-		codeSignArgs2.add("-f");
-		addHardenedCodesign(codeSignArgs2);
-		codeSignArgs2.add("--entitlements");
-		codeSignArgs2.add(entitlements);
-		codeSignArgs2.add("-s");
-		codeSignArgs2.add(developerCertificateName);
-		codeSignArgs2.add(appFolder);
-
-		CommandUtils.execute("codesign", codeSignArgs2.toArray(new Object[0]));
-
+		else {
+			Logger.info("Using default entitlements for JVM and launcher");
+			signer = new Signer(developerId, appFile.toPath(), executable.toPath());
 		}
-
-	private void addHardenedCodesign(Collection<Object> args){
-		if (macConfig.isHardenedCodesign()) {
-			if (VersionUtils.compareVersions("10.13.6", SystemUtils.OS_VERSION) >= 0) {
-				args.add("-o");
-				args.add("runtime"); // enable hardened runtime if Mac OS version >= 10.13.6
-			} else {
-				Logger.warn("Mac OS version detected: " + SystemUtils.OS_VERSION + " ... hardened runtime disabled!");
-			}
+		signer.sign();
+	}
+	private void notarize() throws IOException {
+		if (!Platform.mac.isCurrentPlatform()) {
+			Logger.warn("Generated app could not be notarized due to current platform is " + Platform.getCurrentPlatform());
+		} else if (!getMacConfig().isCodesignApp()) {
+			Logger.info("App notarization disabled");
+		} else {
+			String primaryBundleId = macConfig.getAppId();
+			String apiKey = macConfig.getApiKey();
+			String apiIssuer = macConfig.getApiIssuer();
+			Notarizer notarizer = new Notarizer(primaryBundleId, apiKey, apiIssuer, this.appFile.toPath());
+			boolean notarizationResult = notarizer.notarize();
+			if(notarizationResult)
+				Logger.info("Notarization success!");
+			else
+				Logger.warn("Notarization result not as expected. That does not mean it failed necessarily, maybe we just didn't wait long enough.");
 		}
 	}
 
